@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollObserver Example</title>
+</head>
+
+<body>
+    <style>
+        body {
+            margin: 0px;
+            font-family: sans-serif;
+        }
+
+        #sidebar {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 300px;
+            background-color: #ececec;
+            border-right: 2px solid black;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+            font-size: 20px;
+        }
+
+        #observed {
+            height: 100vh;
+            background-color: gray;
+            text-align: right;
+        }
+
+        .empty-area {
+            height: 150vh;
+        }
+
+        #scroll-area {
+            width: calc(100% - 340px);
+            margin-left: 340px;
+        }
+
+        #scroll-area div {
+            display: flex;
+        }
+
+        #scroll-area h2 {
+            font-size: 50px;
+            margin: auto;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 30px;
+        }
+    </style>
+
+
+    <div id='sidebar'>
+        <label>State</label>
+        <div id='output-state'></div>
+        <br>
+        <label>Scroll Percent</label>
+        <div id='output-scroll-percent'>0%</div>
+    </div>
+
+
+    <div id="scroll-area">
+        <div class='empty-area'>
+            <h2>Scroll Down!</h2>
+        </div>
+        <div id='observed'>
+            <h2>Intersect Area</h2>
+        </div>
+        <div class='empty-area'>
+            <h2>Scroll Up!</h2>
+        </div>
+    </div>
+
+    <script src='../scroll-observer.js'></script>
+    <script>
+        const observedElement = document.getElementById('observed')
+        const outputState = document.getElementById('output-state')
+        const outputScrollPercent = document.getElementById('output-scroll-percent')
+
+        function onIntersecting(scrollPercent) {
+            outputScrollPercent.innerText = `${Math.round(scrollPercent * 100)}%`
+
+        }
+        function onIntersect(entry, isTop) {
+            if (isTop) outputState.innerText = "Intersecting (Top)"
+            else outputState.innerText = "Intersecting (Bottom)"
+
+        }
+        function onDeintersect(entry, isTop) {
+            if (isTop) outputState.innerText = "Not Intersecting (Top)"
+            else outputState.innerText = "Not Intersecting (Bottom)"
+        }
+
+        const observer = new ScrollObserver(observedElement, {
+            marginTop: '-20%',
+            marginBottom: '-20%',
+            onIntersect: onIntersect,
+            onIntersecting: onIntersecting,
+            onDeintersect: onDeintersect
+        })
+
+    </script>
+
+</body>
+
+</html>
