@@ -2,8 +2,8 @@
  * @typedef {Object} IntersectSettingsObject
  * @property {String} marginTop [0] accepts string (px/%) or number - =rootMargin top. Distance the top scroll trigger is above top of the viewport
  * @property {String} marginBottom [0] accepts string (px/%) or number - =rootMargin bottom. Distance the bottom scroll trigger is below from bottom of the viewport
- * @property {Function} onIntersect(entry, percentScrolled) [null] - function that fires when intersect starts
- * @property {Function} onDeintersect(entry, percentScrolled) [null] - function that fires when intersect ends
+ * @property {Function} onIntersect(entry, isTop) [null] - function that fires when intersect starts
+ * @property {Function} onDeintersect(entry, isTop) [null] - function that fires when intersect ends
  * @property {Function} onIntersecting(percentScrolled) [null] - function that fires on scroll while intersecting
  */
 
@@ -14,6 +14,7 @@ class ScrollObserver {
     /**
      * @param {HTMLElement} observedElement The element that is observed by the IntersectionObserver
      * @param {IntersectSettingsObject} intersectSettings (marginTop, marginBottom, onIntersect, onDeintersect, onIntersecting) trigger positions & intersection functions
+     * @param {Boolean} usePseudoObserver [false] Whether an IntersectionObserver or a window scroll event should be used to detect intersection
      */
     constructor(observedElement, intersectSettings, usePseudoObserver = false) {
         this.observedElement = observedElement
