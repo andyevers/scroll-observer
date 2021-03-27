@@ -68,7 +68,7 @@ class ScrollObserver {
 
         this._createIntersectionObserver = () => {
             const { intersectSettings, getPercentScrolled, _toMarginString, _observerCallback } = this
-            const { marginTop, marginBottom } = intersectSettings
+            const { marginTop, marginBottom, onIntersecting } = intersectSettings
 
             const observerOptions = {
                 rootMargin: `${_toMarginString(marginTop)} 0px ${_toMarginString(marginBottom)} 0px`,
