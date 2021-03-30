@@ -67,19 +67,19 @@ const outputScrollPercent = document.getElementById('output-scroll-percent')
 
 function onIntersecting(scrollPercent) {
     outputScrollPercent.innerText = `${Math.round(scrollPercent * 100)}%`
-
 }
+
 function onIntersect(entry, isTop) {
     if (isTop) outputState.innerText = "Intersecting (Top)"
     else outputState.innerText = "Intersecting (Bottom)"
-
 }
+
 function onDeintersect(entry, isTop) {
     if (isTop) outputState.innerText = "Not Intersecting (Top)"
     else outputState.innerText = "Not Intersecting (Bottom)"
 }
 
-const observer = new ScrollObserver(observed, {
+const observer = new ScrollObserver(observedElement, {
     marginTop: '-20%',
     marginBottom: '-20%',
     onIntersect: onIntersect,
