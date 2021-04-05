@@ -42,7 +42,7 @@ new ScrollObserver(observedElement, intersectSettings, usePseudoObserver = false
 * `observe()` - Starts observing observedElement for intersect.
 * `unobserve()` - Stops observing observedElement for intersect.
 * `getPercentScrolled(constrainRange = true)` - Returns percent (float between 0 & 1) of how far along root is through the height of the intersection area. 0 = at top trigger, 1 = at bottom trigger. if constrainRange = false, allows for numbers < 0 & > 1.
-
+* `getPseudoEntry()` - Returns an object with the same properties as an 'IntersectionObserverEntry' calculated without using an IntersectionObserver instance.
 <br>
 
 ## Properties
@@ -51,10 +51,11 @@ new ScrollObserver(observedElement, intersectSettings, usePseudoObserver = false
 * `intersectionObserver {IntersectionObserver | pseudoObserver}` - Instance of IntersectionObserver or pseudoObserver.
 * `isInitialized {Boolean}` - True if ScrollObserver has been initialized.
 * `isObserving {Boolean}` - True if intersectionObserver is observing observedElement.
-* `rootRect {Object}` - (Getter) returns bounding rect of root.
+* `rootRect {Object}` - (Getter) Returns bounding rect of root.
 * `isIntersecting {Boolean}` - (Getter) True if root is intersecting observedElement.
 * `intersectSettings {IntersectSettingsObject}` - (Getter) Returns intersectSettings with defaults if not set during init.
 * `usePseudoObserver {Boolean}` - (Getter / Setter) Specifies if IntersectionObserver or pseudoObserver will be used to observe observedElement. Toggling this after init will replace the existing observer and match the previous observe state.
+* `intersectionRect {Object}` - (Getter) Returns bouding rect of intersection area. Same as IntersectionObserverEntry.intersectionRect calculated without using an IntersectionObserver instance.
 
 <br>
 
