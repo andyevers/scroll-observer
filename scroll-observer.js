@@ -1,11 +1,11 @@
 /**
- * @typedef {Object} IntersectSettingsObject
- * @property {String} marginTop [0] accepts string (px/%) or number - =rootMargin top. Distance the top scroll trigger is above top of the viewport
- * @property {String} marginBottom [0] accepts string (px/%) or number - =rootMargin bottom. Distance the bottom scroll trigger is below from bottom of the viewport
- * @property {Function} onIntersect(entry, isTop) [null] - function that fires when intersect starts
- * @property {Function} onDeintersect(entry, isTop) [null] - function that fires when intersect ends
- * @property {Function} onIntersecting(percentScrolled) [null] - function that fires on scroll while intersecting
- */
+* @typedef {Object} IntersectSettingsObject
+* @property {String} marginTop [0] accepts string (px/%) or number - =rootMargin top. Distance the top scroll trigger is above top of the viewport
+* @property {String} marginBottom [0] accepts string (px/%) or number - =rootMargin bottom. Distance the bottom scroll trigger is below from bottom of the viewport
+* @property {Function} onIntersect(entry, isTop) [null] - function that fires when intersect starts
+* @property {Function} onDeintersect(entry, isTop) [null] - function that fires when intersect ends
+* @property {Function} onIntersecting(percentScrolled) [null] - function that fires on scroll while intersecting
+*/
 
 /**
  * Adds an IntersectionObserver to trigger functions onIntersect, onIntersecting, and onDeintersect
@@ -50,14 +50,32 @@ class ScrollObserver {
             const elementRect = observedElement.getBoundingClientRect()
             const elementTopPageDepth = scrollY + elementRect.top
             const elementBottomPageDepth = scrollY + elementRect.bottom
+            const rootTopPageDepth = scrollY + rootRect.top
 
             const intersectStartPosition = elementTopPageDepth - rootRect.height
             const intersectAreaHeight = elementBottomPageDepth - intersectStartPosition
 
-            const distanceBelowElementTop = rootRect.top - intersectStartPosition
+            const distanceBelowElementTop = rootTopPageDepth - intersectStartPosition
             const percentScrolled = distanceBelowElementTop / intersectAreaHeight
             if (constrainRange) return percentScrolled > 1 ? 1 : percentScrolled < 0 ? 0 : percentScrolled
             else return percentScrolled
+        }
+
+        this.getPseudoEntry = () => {
+            const getRectArea = rect => rect.width * rect.height
+            const elementRect = this.observedElement.getBoundingClientRect()
+            const intersectionRect = this.intersectionRect
+            const intersectionRatio = getRectArea(intersectionRect) / getRectArea(elementRect)
+
+            return {
+                boundingClientRect: elementRect,
+                intersectionRatio: intersectionRatio,
+                intersectionRect: intersectionRect,
+                isIntersecting: this.isIntersecting,
+                rootBounds: this.rootRect,
+                target: this.observedElement,
+                time: performance.now()
+            }
         }
 
         this._createObserver = () => {
@@ -80,24 +98,23 @@ class ScrollObserver {
         }
 
         this._createPseudoObserver = () => {
-            const { intersectSettings, _observerCallback, getPercentScrolled } = this
+            const { intersectSettings, _observerCallback, getPercentScrolled, getPseudoEntry } = this
             const { onIntersecting } = intersectSettings
-            let isIntersectTriggered = false
 
             const onIntersectingScroll = () => onIntersecting(getPercentScrolled())
-            const checkIsIntersecting = () => this.isIntersecting
+            let isIntersectTriggered = false
 
             const onScroll = () => {
-                const isIntersecting = checkIsIntersecting()
-                const intersectTriggered = isIntersecting && !isIntersectTriggered
-                const deintersectTriggered = !isIntersecting && isIntersectTriggered
+                const pseudoEntry = getPseudoEntry()
+                const intersectTriggered = pseudoEntry.isIntersecting && !isIntersectTriggered
+                const deintersectTriggered = !pseudoEntry.isIntersecting && isIntersectTriggered
 
                 if (intersectTriggered) {
-                    _observerCallback([{ isIntersecting: true }], onIntersectingScroll)
+                    _observerCallback([pseudoEntry], onIntersectingScroll)
                     isIntersectTriggered = true
                 }
                 if (deintersectTriggered) {
-                    _observerCallback([{ isIntersecting: false }], onIntersectingScroll)
+                    _observerCallback([pseudoEntry], onIntersectingScroll)
                     isIntersectTriggered = false
                 }
             }
@@ -183,9 +200,48 @@ class ScrollObserver {
         marginBottom = _toMarginNumber(marginBottom)
 
         const height = innerHeight + marginTop + marginBottom
-        const top = scrollY - marginTop
+        const top = marginTop * -1
         const bottom = top + height
-        return { height: height, top: top, bottom: bottom }
+
+        return {
+            top: top,
+            right: window.innerWidth,
+            bottom: bottom,
+            left: 0,
+            height: height,
+            width: window.innerWidth,
+            x: 0,
+            y: top
+        }
+    }
+
+    get intersectionRect() {
+        if (!this.isIntersecting) return { top: 0, right: 0, bottom: 0, left: 0, height: 0, width: 0, x: 0, y: 0 }
+
+        const rr = this.rootRect
+        const er = this.observedElement.getBoundingClientRect()
+
+        const top = Math.max(rr.top, er.top),
+            right = Math.min(rr.right, er.right),
+            bottom = Math.min(rr.bottom, er.bottom),
+            left = Math.max(rr.left, er.left)
+
+        const intersectionRect = {
+            top: top,
+            right: right,
+            bottom: bottom,
+            left: left,
+            height: bottom - top,
+            width: right - left,
+            x: left,
+            y: top
+        }
+
+        Object.entries(intersectionRect).forEach(([k, v]) => {
+            intersectionRect[k] = Math.max(v, 0)
+        })
+
+        return intersectionRect
     }
 
     get isIntersecting() {
