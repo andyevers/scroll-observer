@@ -109,24 +109,19 @@ class ScrollObserver {
                 const intersectTriggered = pseudoEntry.isIntersecting && !isIntersectTriggered
                 const deintersectTriggered = !pseudoEntry.isIntersecting && isIntersectTriggered
 
-                if (intersectTriggered) {
+                if (intersectTriggered || deintersectTriggered) {
                     _observerCallback([pseudoEntry], onIntersectingScroll)
-                    isIntersectTriggered = true
-                }
-                if (deintersectTriggered) {
-                    _observerCallback([pseudoEntry], onIntersectingScroll)
-                    isIntersectTriggered = false
+                    isIntersectTriggered = intersectTriggered
                 }
             }
 
+            //fire callback on observer creation regardless of intersect
+            _observerCallback([getPseudoEntry()], onIntersectingScroll)
+
             const pseudoObserver = {}
-            pseudoObserver.observe = () => {
-                if (!this.isInitialized) onScroll()
-                window.addEventListener('scroll', onScroll)
-            }
-            pseudoObserver.unobserve = () => {
-                window.removeEventListener('scroll', onScroll)
-            }
+            pseudoObserver.observe = () => window.addEventListener('scroll', onScroll)
+            pseudoObserver.unobserve = () => window.removeEventListener('scroll', onScroll)
+
             return pseudoObserver
         }
 
