@@ -138,19 +138,14 @@ class ScrollObserver {
         }
 
         this._createPseudoObserver = () => {
-            const { intersectSettings, _observerCallback, getPercentScrolled, getPseudoEntry, _getTriggerPositions } = this
+            const { intersectSettings, _observerCallback, getPercentScrolled, getPseudoEntry, _getTriggerPositionsBeforeAfter } = this
             const { onIntersecting } = intersectSettings
-
             const onIntersectingScroll = () => onIntersecting(getPercentScrolled())
-            const getOldTriggerPositions = () => this.triggerPositions
 
             const onScroll = () => {
                 const pseudoEntry = getPseudoEntry()
-                const newTriggerPositions = _getTriggerPositions(pseudoEntry)
-                const oldTriggerPositions = getOldTriggerPositions()
-                const crossoverTriggered = oldTriggerPositions.top !== newTriggerPositions.top
-                    || oldTriggerPositions.bottom !== newTriggerPositions.bottom
-
+                const { top, bottom, prevTop, prevBottom } = _getTriggerPositionsBeforeAfter(pseudoEntry)
+                const crossoverTriggered = top !== prevTop || bottom !== prevBottom
                 if (crossoverTriggered) _observerCallback([pseudoEntry], onIntersectingScroll)
             }
 
