@@ -2,13 +2,14 @@
 * @typedef {Object} IntersectSettingsObject
 * @property {String} marginTop [0] accepts string (px/%) or number - =rootMargin top. Distance the top scroll trigger is above top of the viewport
 * @property {String} marginBottom [0] accepts string (px/%) or number - =rootMargin bottom. Distance the bottom scroll trigger is below from bottom of the viewport
-* @property {Function} onIntersect(entry, isTop) [null] - function that fires when intersect starts
-* @property {Function} onDeintersect(entry, isTop) [null] - function that fires when intersect ends
+* @property {Function} onIntersect(entry, isTriggeredTop) [null] - function that fires when intersect starts
+* @property {Function} onDeintersect(entry, isTriggeredTop) [null] - function that fires when intersect ends
 * @property {Function} onIntersecting(percentScrolled) [null] - function that fires on scroll while intersecting
+* @property {Function} onTriggerCrossover(entry, triggerPositionsBeforeAfter) [null] - function that fires when any of the top or bottom triggers cross the observed element, regardless of whether the intersecting state changes.
 */
 
 /**
- * Adds an IntersectionObserver to trigger functions onIntersect, onIntersecting, and onDeintersect
+ * Adds an IntersectionObserver to trigger functions onIntersect, onIntersecting, onDeintersect, and onTriggerCrossover
  */
 class ScrollObserver {
     /**
@@ -23,7 +24,8 @@ class ScrollObserver {
         this.isInitialized = false
         this.isObserving = false
         this.usePseudoObserver = usePseudoObserver
-        this._intersectSettings = intersectSettings
+        this.intersectSettings = intersectSettings
+        this.triggerPositions = { top: null, bottom: null }
 
         //________METHODS_________//
         this.observe = () => {
@@ -65,7 +67,9 @@ class ScrollObserver {
             const getRectArea = rect => rect.width * rect.height
             const elementRect = this.observedElement.getBoundingClientRect()
             const intersectionRect = this.intersectionRect
-            const intersectionRatio = getRectArea(intersectionRect) / getRectArea(elementRect)
+
+            let intersectionRatio = getRectArea(intersectionRect) / getRectArea(elementRect)
+            if (isNaN(intersectionRatio)) intersectionRatio = this.triggerPositions.top === 'below' || this.isIntersecting ? 1 : 0
 
             return {
                 boundingClientRect: elementRect,
@@ -75,6 +79,42 @@ class ScrollObserver {
                 rootBounds: this.rootRect,
                 target: this.observedElement,
                 time: performance.now()
+            }
+        }
+
+        this.resetObserver = () => {
+            const { isObserving, _createObserver, observe, unobserve } = this
+            if (isObserving) unobserve()
+            this.intersectionObserver = _createObserver()
+            if (isObserving) observe()
+        }
+
+        this.updateIntersectSettings = intersectSettings => {
+            const newIntersectSettings = Object.assign({}, this._intersectSettings)
+            for (let [key, val] of Object.entries(intersectSettings)) {
+                newIntersectSettings[key] = val
+            }
+            this.intersectSettings = newIntersectSettings
+        }
+
+        this._getTriggerPositionsBeforeAfter = observerEntry => {
+            const { rootBounds, boundingClientRect, isIntersecting } = observerEntry
+            const oldTriggerPositions = this.triggerPositions
+            let top, bottom
+
+            if (rootBounds.top <= boundingClientRect.top) top = 'above'
+            if (rootBounds.top >= boundingClientRect.top && isIntersecting === true) top = 'intersecting'
+            if (rootBounds.top >= boundingClientRect.top && isIntersecting === false) top = 'below'
+
+            if (rootBounds.bottom <= boundingClientRect.top && isIntersecting === false) bottom = 'above'
+            if (rootBounds.bottom >= boundingClientRect.top && isIntersecting === true) bottom = 'intersecting'
+            if (rootBounds.bottom >= boundingClientRect.bottom) bottom = 'below'
+
+            return {
+                top: top,
+                bottom: bottom,
+                prevTop: oldTriggerPositions.top,
+                prevBottom: oldTriggerPositions.bottom
             }
         }
 
@@ -98,21 +138,20 @@ class ScrollObserver {
         }
 
         this._createPseudoObserver = () => {
-            const { intersectSettings, _observerCallback, getPercentScrolled, getPseudoEntry } = this
+            const { intersectSettings, _observerCallback, getPercentScrolled, getPseudoEntry, _getTriggerPositions } = this
             const { onIntersecting } = intersectSettings
 
             const onIntersectingScroll = () => onIntersecting(getPercentScrolled())
-            let isIntersectTriggered = false
+            const getOldTriggerPositions = () => this.triggerPositions
 
             const onScroll = () => {
                 const pseudoEntry = getPseudoEntry()
-                const intersectTriggered = pseudoEntry.isIntersecting && !isIntersectTriggered
-                const deintersectTriggered = !pseudoEntry.isIntersecting && isIntersectTriggered
+                const newTriggerPositions = _getTriggerPositions(pseudoEntry)
+                const oldTriggerPositions = getOldTriggerPositions()
+                const crossoverTriggered = oldTriggerPositions.top !== newTriggerPositions.top
+                    || oldTriggerPositions.bottom !== newTriggerPositions.bottom
 
-                if (intersectTriggered || deintersectTriggered) {
-                    _observerCallback([pseudoEntry], onIntersectingScroll)
-                    isIntersectTriggered = intersectTriggered
-                }
+                if (crossoverTriggered) _observerCallback([pseudoEntry], onIntersectingScroll)
             }
 
             //fire callback on observer creation regardless of intersect
@@ -126,28 +165,48 @@ class ScrollObserver {
         }
 
         this._observerCallback = (entries, onIntersectingScroll) => {
-            const { intersectSettings, hasScrollListener, getPercentScrolled } = this
-            const { onIntersect, onIntersecting, onDeintersect } = intersectSettings
-            const percentScrolled = getPercentScrolled()
+            const { intersectSettings, hasScrollListener, _getTriggerPositionsBeforeAfter } = this
+            const { onIntersect, onIntersecting, onDeintersect, onTriggerCrossover } = intersectSettings
+            const entry = entries[0] // will always be 1 entry because only 1 element is observed
+            const { isIntersecting } = entry
 
-            entries.forEach(entry => {
-                if (percentScrolled === 0) this.isTop = true
-                if (percentScrolled === 1) this.isTop = false
+            // get updated trigger positions
+            const triggerPositionsBeforeAfter = _getTriggerPositionsBeforeAfter(entry)
+            const { top, bottom, prevTop, prevBottom } = triggerPositionsBeforeAfter
+            this.triggerPositions = { top: top, bottom: bottom } //update trigger positions
 
-                if (entry.isIntersecting) {
-                    if (onIntersect) onIntersect(entry, this.isTop)
-                    if (onIntersecting && !hasScrollListener) {
-                        window.addEventListener('scroll', onIntersectingScroll)
-                        this.hasScrollListener = true
-                    }
-                } else {
-                    if (onDeintersect) onDeintersect(entry, this.isTop)
-                    if (onIntersecting) {
-                        window.removeEventListener('scroll', onIntersectingScroll)
-                        this.hasScrollListener = false
-                    }
+            // check where entry was triggered from
+            const isFirstCheck = !prevTop || !prevBottom
+            let isTriggerTopIntersect, isTriggerTopDeintersect, isTriggerBottomIntersect, isTriggerBottomDeintersect
+            isTriggerTopIntersect = isIntersecting && prevBottom === 'above' && bottom !== 'above'
+            isTriggerBottomIntersect = isIntersecting && prevTop === 'below' && top !== 'below'
+            isTriggerTopDeintersect = !isIntersecting && prevBottom !== 'above' && bottom === 'above'
+            isTriggerBottomDeintersect = !isIntersecting && prevTop !== 'below' && top === 'below'
+
+            // Fire onTriggerCrossover if is set
+            if (onTriggerCrossover) onTriggerCrossover(entry, triggerPositionsBeforeAfter)
+
+            // intersect triggered
+            const isIntersectTrigger = isTriggerTopIntersect || isTriggerBottomIntersect
+            if (isIntersectTrigger || (isFirstCheck && isIntersecting)) {
+                if (onIntersecting && !hasScrollListener) { // add scroll event listener for onIntersecting
+                    onIntersectingScroll()
+                    window.addEventListener('scroll', onIntersectingScroll)
+                    this.hasScrollListener = true
                 }
-            })
+                if (onIntersect) onIntersect(entry, isTriggerTopIntersect)
+            }
+
+            // deintersect triggered
+            const isDeintersectTrigger = isTriggerTopDeintersect || isTriggerBottomDeintersect
+            if (isDeintersectTrigger || (isFirstCheck && !isIntersecting)) {
+                if (onIntersecting) { // remove scroll event for onIntersecting
+                    onIntersectingScroll()
+                    window.removeEventListener('scroll', onIntersectingScroll)
+                    this.hasScrollListener = false
+                }
+                if (onDeintersect) onDeintersect(entry, isTriggerTopDeintersect)
+            }
         }
 
         this._toMarginNumber = margin => {
@@ -178,13 +237,10 @@ class ScrollObserver {
     }
 
     set usePseudoObserver(bool) {
-        const { isObserving, isInitialized, usePseudoObserver, _createObserver, observe, unobserve } = this
+        const { isInitialized, usePseudoObserver, resetObserver } = this
         this._usePseudoObserver = bool
         if (bool === usePseudoObserver || !isInitialized) return
-
-        if (isObserving) unobserve()
-        this.intersectionObserver = _createObserver()
-        if (isObserving) observe()
+        resetObserver()
     }
 
     get rootRect() {
@@ -246,13 +302,43 @@ class ScrollObserver {
     }
 
     get intersectSettings() {
-        const { marginTop, marginBottom, onIntersect, onIntersecting, onDeintersect } = this._intersectSettings
+        const {
+            marginTop,
+            marginBottom,
+            onIntersect,
+            onIntersecting,
+            onDeintersect,
+            onTriggerCrossover
+        } = this._intersectSettings
+
         return {
             marginTop: marginTop || 0,
             marginBottom: marginBottom || 0,
             onIntersect: onIntersect || null,
             onIntersecting: onIntersecting || null,
             onDeintersect: onDeintersect || null,
+            onTriggerCrossover: onTriggerCrossover || null
         }
+    }
+
+    set intersectSettings(intersectSettings) {
+        const { intersectionObserver, resetObserver } = this
+        const allowedKeys = [
+            'marginTop',
+            'marginBottom',
+            'onIntersect',
+            'onIntersecting',
+            'onDeintersect',
+            'onTriggerCrossover'
+        ]
+
+        // Check that each key is allowed
+        const newIntersectSettings = {}
+        for (let [key, val] of Object.entries(intersectSettings)) {
+            if (allowedKeys.includes(key)) newIntersectSettings[key] = val
+            else console.error(`'${key}' is not a valid intersectSettings key for ScrollObserver`)
+        }
+        this._intersectSettings = newIntersectSettings
+        if (intersectionObserver !== null) resetObserver() // reset the observer to adopt the new intersectSettings
     }
 }
