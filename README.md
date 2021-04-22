@@ -24,7 +24,7 @@ new ScrollObserver(observedElement, intersectSettings, usePseudoObserver = false
 ```
 * `{HTMLElement} observedElement` - The element that is observed by the IntersectionObserver. functions are activated when this intersects with root (trigger area).
 * `{IntersectSettingsObject} intersectSettings` - trigger positions & intersection functions. See options for intersectSettings below.
-* `{Boolean} usePseudoObserver` - [false] If true, the IntersectionObserver will be replaced with a window scroll event listener that is always checking for the intersection. This can be changed after initialization.
+* `{Boolean} usePseudoObserver` - [false] If true, the IntersectionObserver will be replaced with a window scroll event listener that is always checking for the intersection. This can be changed after initialization. __Note:__ Use this for instances when root will never directly contact the observedElement or for any reason that would cause IntersectionObserver not to trigger, otherwise prefer leaving this false.
 
 ### Intersect Settings
 * `marginTop {String | Number}` [0] Distance the top scroll trigger is above top of the viewport. Accepts number string (px/%) or number.
