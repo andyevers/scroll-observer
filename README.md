@@ -29,12 +29,11 @@ new ScrollObserver(observedElement, intersectSettings, usePseudoObserver = false
 ### Intersect Settings
 * `marginTop {String | Number}` [0] Distance the top scroll trigger is above top of the viewport. Accepts number string (px/%) or number.
 * `marginBottom {String | Number}` [0] - Distance the bottom scroll trigger is below bottom of the viewport. Accepts number string (px/%) or number.
-* `onIntersect(entry, isTop) {Function}` [null] - Function fires when intersect begins.
+* `onIntersect(entry, percentScrolled) {Function}` [null] - Function fires when intersect begins.
     * __entry__ {IntersectionObserverEntry} - entry when entry.isIntersecting becomes true, receives arguments entry and percentScrolled arguments.
-    * __isTop__ {Boolean}` - true if the trigger was activated at the top of the intersection area
-* `onIntersecting(percentScrolled) {Function}` [null] - Function fires while scrolling through intersection area. receives percentScrolled argument.
     * __percentScrolled__ {Float}` - number between 0 and 1 how far along root is through the height of the intersection area. 0 = at top trigger, 1 = at bottom trigger.
-* `onDeintersect(entry, isTop) {Function}` [null] - Function fires when intersect ends.
+* `onDeintersect(entry, percentScrolled) {Function}` [null] - Function fires when intersect ends.
+* `onIntersecting(percentScrolled) {Function}` [null] - Function fires while scrolling through intersection area. receives percentScrolled argument.
 
 <br>
 
@@ -43,6 +42,8 @@ new ScrollObserver(observedElement, intersectSettings, usePseudoObserver = false
 * `unobserve()` - Stops observing observedElement for intersect.
 * `getPercentScrolled(constrainRange = true)` - Returns percent (float between 0 & 1) of how far along root is through the height of the intersection area. 0 = at top trigger, 1 = at bottom trigger. if constrainRange = false, allows for numbers < 0 & > 1.
 * `getPseudoEntry()` - Returns an object with the same properties as an 'IntersectionObserverEntry' calculated without using an IntersectionObserver instance.
+* `resetObserver()` - Removes current observer and and creates a new instance matching the same observe state.
+* `updateIntersectSettings(intersectSettings)` - Updates the intersect settings for the keys provided and uses the previous entries that were not specified. this causes the observer to reset.
 <br>
 
 ## Properties
