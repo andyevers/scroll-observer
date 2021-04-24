@@ -52,7 +52,7 @@ new ScrollObserver(observedElement, intersectSettings, usePseudoObserver = false
 * `intersectionObserver {IntersectionObserver | pseudoObserver}` - Instance of IntersectionObserver or pseudoObserver.
 * `isInitialized {Boolean}` - True if ScrollObserver has been initialized.
 * `isObserving {Boolean}` - True if intersectionObserver is observing observedElement.
-* `rootRect {Object}` - (Getter) Returns bounding rect of root.
+* `rootBounds {Object}` - (Getter) Returns bounding rect of root.
 * `isIntersecting {Boolean}` - (Getter) True if root is intersecting observedElement.
 * `intersectSettings {IntersectSettingsObject}` - (Getter) Returns intersectSettings with defaults if not set during init.
 * `usePseudoObserver {Boolean}` - (Getter / Setter) Specifies if IntersectionObserver or pseudoObserver will be used to observe observedElement. Toggling this after init will replace the existing observer and match the previous observe state.
