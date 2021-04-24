@@ -45,14 +45,14 @@ class ScrollObserver {
         }
 
         this.getPercentScrolled = (constrainRange = true) => {
-            const { observedElement, rootRect } = this
+            const { observedElement, rootBounds } = this
 
             const elementRect = observedElement.getBoundingClientRect()
             const elementTopPageDepth = scrollY + elementRect.top
             const elementBottomPageDepth = scrollY + elementRect.bottom
-            const rootTopPageDepth = scrollY + rootRect.top
+            const rootTopPageDepth = scrollY + rootBounds.top
 
-            const intersectStartPosition = elementTopPageDepth - rootRect.height
+            const intersectStartPosition = elementTopPageDepth - rootBounds.height
             const intersectAreaHeight = elementBottomPageDepth - intersectStartPosition
 
             const distanceBelowElementTop = rootTopPageDepth - intersectStartPosition
@@ -69,7 +69,7 @@ class ScrollObserver {
 
             // NaN when using pseudo observer and elementRect area is 0. if is intersecting or below intersect, set to 1, else 0
             if (isNaN(intersectionRatio)) {
-                const isBelow = this.rootBounds.top >= this.boundingClientRect.top && this.isIntersecting === false
+                const isBelow = this.rootBounds.top >= elementRect.top && this.isIntersecting === false
                 intersectionRatio = isBelow || this.isIntersecting ? 1 : 0
             }
 
@@ -78,7 +78,7 @@ class ScrollObserver {
                 intersectionRatio: intersectionRatio,
                 intersectionRect: intersectionRect,
                 isIntersecting: this.isIntersecting,
-                rootBounds: this.rootRect,
+                rootBounds: this.rootBounds,
                 target: this.observedElement,
                 time: performance.now()
             }
@@ -199,7 +199,7 @@ class ScrollObserver {
         resetObserver()
     }
 
-    get rootRect() {
+    get rootBounds() {
         let { marginTop, marginBottom } = this.intersectSettings
         const { _toMarginNumber } = this
 
@@ -225,7 +225,7 @@ class ScrollObserver {
     get intersectionRect() {
         if (!this.isIntersecting) return { top: 0, right: 0, bottom: 0, left: 0, height: 0, width: 0, x: 0, y: 0 }
 
-        const rr = this.rootRect
+        const rr = this.rootBounds
         const er = this.observedElement.getBoundingClientRect()
 
         const top = Math.max(rr.top, er.top),
